@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging / PyInstaller
+build/
+dist/
+*.spec
+*.egg-info/
+.eggs/
+
+# Environments & virtualenvs
+.venv/
+venv/
+ENV/
+env/
+
+# Project local runtime configs & local storage data
+config.ini
+data.json
+ZS-DL downloads/
+
+# IDE & Editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary / Scratch files
+scratch/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

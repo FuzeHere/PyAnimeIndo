@@ -1,0 +1,32 @@
+<RCC>
+  <qresource prefix="font">
+    <file>resources/Roboto.ttf</file>
+  </qresource>
+  <qresource prefix="icons">
+    <file>resources/bookmark.svg</file>
+    <file>resources/bookmark_outline.svg</file>
+    <file>resources/clock.svg</file>
+    <file>resources/close.svg</file>
+    <file>resources/cog.svg</file>
+    <file>resources/collection.svg</file>
+    <file>resources/film.svg</file>
+    <file>resources/genre.svg</file>
+    <file>resources/kofi.svg</file>
+    <file>resources/latest.svg</file>
+    <file>resources/ripple.svg</file>
+    <file>resources/star_off.svg</file>
+    <file>resources/star_on.svg</file>
+    <file>resources/status.svg</file>
+    <file>resources/studio.svg</file>
+    <file>resources/tags.svg</file>
+    <file>resources/time.svg</file>
+    <file>resources/type.svg</file>
+    <file>resources/github.png</file>
+  </qresource>
+  <qresource prefix="images">
+    <file>resources/ayra.jpg</file>
+  </qresource>
+  <qresource prefix="animation">
+    <file>resources/ripple.gif</file>
+  </qresource>
+</RCC>
