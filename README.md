@@ -14,7 +14,7 @@ Nonton anime subtitle Indonesia tanpa iklan. Dengan GUI berbasis **PyQt5** dan *
 
 ---
 
-## 🚀 Cara Pakai untuk Pengguna (Langsung Executable `.exe`)
+## Cara Pakai untuk Pengguna (Langsung Executable `.exe`)
 
 Bagi Anda yang hanya ingin menggunakan aplikasi tanpa menginstall Python:
 
@@ -59,7 +59,7 @@ File `.exe` hasil kompilasi akan otomatis dibuat di folder **`dist/pyanimeindo.e
 
 ---
 
-## ✨ Fitur Utama
+## Fitur Utama
 - **Material UI Modern**
 - **Streaming Lancar sampai 1080p**
 - **Upscaling Gambar hingga 4K UHD** (Menggunakan integrasi Anime4K)
@@ -71,7 +71,7 @@ File `.exe` hasil kompilasi akan otomatis dibuat di folder **`dist/pyanimeindo.e
 
 ---
 
-## 🎨 Integrasi dengan Anime4K (Khusus MPV Player)
+## Integrasi dengan Anime4K (Khusus MPV Player)
 - Buka menu **Pengaturan**, klik tombol `Install (High-end VGA)` atau `Install (Low-end VGA)` sesuai spesifikasi GPU komputer Anda.
 - Tutup Pengaturan. Saat streaming di MPV Player, ganti mode preset Anime4K secara *real-time* menggunakan tombol pintasan keyboard:
   - `CTRL + 1` (Mode A - HQ/Fast)
@@ -84,7 +84,7 @@ File `.exe` hasil kompilasi akan otomatis dibuat di folder **`dist/pyanimeindo.e
 
 ---
 
-## 📜 Kredit & Pengembang
+## Kredit & Pengembang
 - **Programmer/Designer Original**: [Ayra Hikari](https://github.com/AyraHikari)
 - **Pemelihara & Pembaru Versi 1.2.4**: [PyAnimeIndo Maintainers]
 - **Ikon**: [Heroicons](https://heroicons.com)
