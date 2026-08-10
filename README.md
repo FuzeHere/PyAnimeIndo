@@ -25,7 +25,7 @@ Bagi Anda yang hanya ingin menggunakan aplikasi tanpa menginstall Python:
 
 ---
 
-## 🛠️ Panduan Pengembang (Developer Setup)
+## Panduan Pengembang (Developer Setup)
 
 Bagi Anda pengembang yang ingin memodifikasi atau mengembangkan proyek ini:
 
@@ -86,7 +86,6 @@ File `.exe` hasil kompilasi akan otomatis dibuat di folder **`dist/pyanimeindo.e
 
 ## Kredit & Pengembang
 - **Programmer/Designer Original**: [Ayra Hikari](https://github.com/AyraHikari)
-- **Pemelihara & Pembaru Versi 1.2.4**: [PyAnimeIndo Maintainers]
 - **Ikon**: [Heroicons](https://heroicons.com)
 - **Host Provider**: Otakudesu
 - **Upscaler/Render**: [Anime4K](https://github.com/bloc97/Anime4K)
