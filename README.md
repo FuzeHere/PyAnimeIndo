@@ -14,17 +14,6 @@ Nonton anime subtitle Indonesia tanpa iklan. Dengan GUI berbasis **PyQt5** dan *
 
 ---
 
-## Cara Pakai untuk Pengguna (Langsung Executable `.exe`)
-
-Bagi Anda yang hanya ingin menggunakan aplikasi tanpa menginstall Python:
-
-1. Buka folder `dist/` atau unduh file **`pyanimeindo.exe`**.
-2. Klik 2x pada file **`pyanimeindo.exe`**.
-3. Pastikan **MPV Player** sudah terinstal di komputer Anda (dapat diinstall mudah via Windows Terminal: `winget install mpv`).
-4. Selamat menonton anime tanpa iklan!
-
----
-
 ## Panduan Pengembang (Developer Setup)
 
 Bagi Anda pengembang yang ingin memodifikasi atau mengembangkan proyek ini:
