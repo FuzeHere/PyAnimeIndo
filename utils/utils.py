@@ -17,11 +17,21 @@ def isWindows():
 		return True
 	return False
 
+import sys
 def get_mpv_cmd():
 	settings = loadSettings()
 	if settings.get("mpv_path") and os.path.exists(settings["mpv_path"]):
 		return settings["mpv_path"]
 	
+	exe_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.getcwd()
+	local_mpv = os.path.join(exe_dir, "mpv.exe")
+	if os.path.exists(local_mpv):
+		return local_mpv
+
+	cwd_mpv = os.path.join(os.getcwd(), "mpv.exe")
+	if os.path.exists(cwd_mpv):
+		return cwd_mpv
+
 	if which := (shutil.which("mpv") or shutil.which("mpv.exe")):
 		return which
 

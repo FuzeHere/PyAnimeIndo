@@ -617,38 +617,34 @@ class AnimeInfo(QDialog, Ui_AnimeInfo):
 		webdata = getDownload(targeturl)
 
 		# Parse quality
-		isFirst = False
+		self.firstQuality.setStatusTip("")
+		self.secondQuality.setStatusTip("")
+		self.thirdQuality.setStatusTip("")
+		self.fourthQuality.setStatusTip("")
+
 		for item in webdata:
 			if "360p" in item:
 				self.firstQuality.setStatusTip(webdata[item])
-				if not isFirst:
-					self.firstQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
-					isFirst = True
-				else:
-					self.firstQuality.setStyleSheet("position: absolute;background: #F4F4F4;border-radius: 8px;text-align: center;color: #333;")
 			elif "480p" in item:
 				self.secondQuality.setStatusTip(webdata[item])
-				if not isFirst:
-					self.secondQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
-					isFirst = True
-				else:
-					self.secondQuality.setStyleSheet("position: absolute;background: #F4F4F4;border-radius: 8px;text-align: center;color: #333;")
 			elif "720p" in item:
 				self.thirdQuality.setStatusTip(webdata[item])
-				if not isFirst:
-					self.thirdQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
-					isFirst = True
-				else:
-					self.thirdQuality.setStyleSheet("position: absolute;background: #F4F4F4;border-radius: 8px;text-align: center;color: #333;")
 			elif "1080p" in item:
 				self.fourthQuality.setStatusTip(webdata[item])
-				if not isFirst:
-					self.fourthQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
-					isFirst = True
-				else:
-					self.fourthQuality.setStyleSheet("position: absolute;background: #F4F4F4;border-radius: 8px;text-align: center;color: #333;")
 
-		if self.firstQuality.statusTip():
+		self.greyAllQ()
+
+		# Auto-select best HD quality by default (720p > 1080p > 480p > 360p)
+		if self.thirdQuality.statusTip():
+			self.thirdQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
+		elif self.fourthQuality.statusTip():
+			self.fourthQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
+		elif self.secondQuality.statusTip():
+			self.secondQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
+		elif self.firstQuality.statusTip():
+			self.firstQuality.setStyleSheet("position: absolute;background: #2D2D2D;border-radius: 8px;text-align: center;color: #fff;")
+
+		if self.getAnimeQuality():
 			self.StreamingBtn.setEnabled(True)
 			self.StreamingBtn.setStyleSheet("padding: 12px 8px;position: absolute;background: #E84545;border-radius: 4px;color: #FFFFFF;")
 		else:
@@ -689,7 +685,20 @@ class AnimeInfo(QDialog, Ui_AnimeInfo):
 		dialog.show()
 		printd("Fetching: " + targeturl)
 		try:
-			zdirect = getStream(targeturl)
+			ep_url = self.AnimeEps.currentItem().statusTip() if self.AnimeEps.currentItem() else ""
+			quality = ""
+			try:
+				if self.firstQuality.styleSheet().split("background: ")[1].split(";")[0] == "#2D2D2D":
+					quality = "360p"
+				elif self.secondQuality.styleSheet().split("background: ")[1].split(";")[0] == "#2D2D2D":
+					quality = "480p"
+				elif self.thirdQuality.styleSheet().split("background: ")[1].split(";")[0] == "#2D2D2D":
+					quality = "720p"
+				elif self.fourthQuality.styleSheet().split("background: ")[1].split(";")[0] == "#2D2D2D":
+					quality = "1080p"
+			except Exception:
+				pass
+			zdirect = getStream(targeturl, ep_url=ep_url, quality=quality)
 			if not zdirect:
 				raise Exception("Link stream not found")
 			t = threading.Thread(target=self.start_mpv, name="MPV Player", args=(zdirect,dialog,))

@@ -37,3 +37,7 @@ scratch/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Executables
+*.exe
+mpv.exe
