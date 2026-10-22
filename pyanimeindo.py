@@ -3,7 +3,7 @@ import subprocess as subp
 from platform import python_version
 from multiprocessing.pool import ThreadPool
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtGui, QtWidgets, QtCore
 from PyQt5.QtWidgets import (
 	QApplication, QMainWindow, QDialog, QMessageBox, QFileDialog
 )
@@ -17,12 +17,66 @@ from UI.Settings import Ui_Dialog as Ui_Settings
 from UI.Streaming import Ui_Form as Ui_Streaming
 
 from API.anime4k import downloadAnime4K, writeLowA4K, writeHighA4K, uninstallA4kdir
-from API.otakudesu import *
+import API.otakudesu as otakudesu_api
+import API.samehadaku as samehadaku_api
 from API.extractor.zdl import zdl
 from API.extractor.krakenfiles import getStream
 from utils.database import loadSettings, saveSettings, saveDataAnime, getSavedAnime, getSavedAnimeList, deleteDataAnime, saveHistoryAnime, getHistoryAnime, getHistoryAnimeList
 from utils.opendialog import OpenDialogApp
 from utils.utils import remove_first_end_spaces, make_rounded, make_rounded_res, svg_color, checkMpvWorking, isWindows, setPresetMPV, get_mpv_cmd
+
+AVAILABLE_PROVIDERS = {
+	"otakudesu": {
+		"name": "Otakudesu",
+		"module": otakudesu_api,
+		"host": "https://otakudesu.blog/"
+	},
+	"samehadaku": {
+		"name": "Samehadaku",
+		"module": samehadaku_api,
+		"host": "https://v2.samehadaku.how/"
+	}
+}
+
+def get_current_provider_key():
+	s = loadSettings()
+	p = s.get("provider", "otakudesu").lower()
+	if p not in AVAILABLE_PROVIDERS:
+		return "otakudesu"
+	return p
+
+def get_provider(provider_key=None):
+	if not provider_key:
+		provider_key = get_current_provider_key()
+	return AVAILABLE_PROVIDERS.get(provider_key, AVAILABLE_PROVIDERS["otakudesu"])["module"]
+
+def get_provider_by_url(url):
+	if not url:
+		return get_provider()
+	url_lower = str(url).lower()
+	if "samehadaku" in url_lower:
+		return samehadaku_api
+	elif "otakudesu" in url_lower:
+		return otakudesu_api
+	return get_provider()
+
+def getOngoing(page=1):
+	return get_provider().getOngoing(page)
+
+def getGenreList():
+	return get_provider().getGenreList()
+
+def getGenreAnime(genre_path):
+	return get_provider_by_url(genre_path).getGenreAnime(genre_path)
+
+def searchAnime(title):
+	return get_provider().searchAnime(title)
+
+def getEpisodes(url):
+	return get_provider_by_url(url).getEpisodes(url)
+
+def getDownload(url):
+	return get_provider_by_url(url).getDownload(url)
 
 DEBUG = False
 APP_STATE = 1
@@ -77,6 +131,43 @@ class MainWindow(QMainWindow, Ui_AnimeIndo):
 		self.searchBar.returnPressed.connect(lambda: self.search(self.searchBar, self.AnimeList))
 		self.titleTab.clicked.connect(self.getLatest)
 
+		# Provider Selector Combo
+		self.providerCombo = QtWidgets.QComboBox(self.tab)
+		self.providerCombo.setGeometry(QtCore.QRect(150, 30, 130, 30))
+		self.providerCombo.setCursor(QtGui.QCursor(Qt.PointingHandCursor))
+		self.providerCombo.setStyleSheet("""
+			QComboBox {
+				border-radius: 12px;
+				padding-left: 10px;
+				padding-right: 10px;
+				background-color: #EDF2F7;
+				color: #2D3748;
+				font-family: 'Segoe UI', 'Roboto';
+				font-weight: bold;
+				font-size: 11px;
+			}
+			QComboBox::drop-down {
+				border: none;
+				width: 20px;
+			}
+			QComboBox QAbstractItemView {
+				background-color: #FFFFFF;
+				color: #2D3748;
+				selection-background-color: #D2E5F4;
+				selection-color: #1A202C;
+				border-radius: 8px;
+			}
+		""")
+		self.providerCombo.addItem("Otakudesu", "otakudesu")
+		self.providerCombo.addItem("Samehadaku", "samehadaku")
+		curr_p = get_current_provider_key()
+		idx = self.providerCombo.findData(curr_p)
+		if idx >= 0:
+			self.providerCombo.setCurrentIndex(idx)
+		self.providerCombo.currentIndexChanged.connect(self.onProviderChanged)
+
+		self.titleTab.setGeometry(QtCore.QRect(25, 30, 120, 30))
+
 		stream = QFile(":/images/resources/ayra.jpg")
 		if stream.open(QFile.ReadOnly):
 			profilePic = stream.readAll()
@@ -89,6 +180,25 @@ class MainWindow(QMainWindow, Ui_AnimeIndo):
 		self.genreTabData.tabBar().installEventFilter(self)
 
 		self.fetchGenreList()
+
+	def onProviderChanged(self, index):
+		provider_key = self.providerCombo.currentData()
+		curr_settings = loadSettings()
+		if curr_settings.get("provider") != provider_key:
+			curr_settings["provider"] = provider_key
+			saveSettings(curr_settings)
+			self.clearJadwalLists()
+			self.getLatest()
+			self.fetchGenreList()
+
+	def clearJadwalLists(self):
+		self.seninList.clear()
+		self.selasaList.clear()
+		self.rabuList.clear()
+		self.kamisList.clear()
+		self.jumatList.clear()
+		self.sabtuList.clear()
+		self.mingguList.clear()
 
 	def eventFilter(self, obj, event):
 		# Main list pages
@@ -225,8 +335,12 @@ class MainWindow(QMainWindow, Ui_AnimeIndo):
 			if next_page:
 				page = 1
 				if "/page/" in path_page:
-					page = int(path_page.split("/page/")[1].replace("/", ""))
-				path_page = "/genres/{}/page/{}/".format(path_page.split("/genres/")[1].split("/")[0], page+1)
+					try:
+						page = int(path_page.split("/page/")[1].split("/")[0])
+					except Exception:
+						page = 1
+				base = path_page.split("/page/")[0].rstrip("/")
+				path_page = f"{base}/page/{page+1}/"
 				self.genreTabData.currentWidget().setWhatsThis(path_page)
 			else:
 				self.genreAnimeList.clear()
@@ -259,6 +373,7 @@ class MainWindow(QMainWindow, Ui_AnimeIndo):
 		if page == 1:
 			self.loadingAnim.setHidden(False)
 			self.AnimeList.clear()
+			self.clearJadwalLists()
 		settings = loadSettings()
 		counter = self.AnimeList.count()
 		if settings.get('slow_mode') and eval(settings['slow_mode']):
@@ -803,7 +918,7 @@ class About(QDialog, Ui_About):
 		super().__init__(parent)
 		self.setupUi(self)
 
-		self.aboutSource.setText(self.aboutSource.text().replace("__pythonVer__", python_version()))
+		self.aboutSource.setText(self.aboutSource.text().replace("__pythonVer__", python_version()).replace("otakudesu.pro", "Otakudesu & Samehadaku").replace("https://otakudesu.pro", "https://v2.samehadaku.how/"))
 		self.aboutSource.linkActivated.connect(self.openURL)
 		self.closeBtn.clicked.connect(self.close)
 		self.githubBtn.clicked.connect(self.openGithub)
@@ -835,6 +950,19 @@ class Settings(QDialog, Ui_Settings):
 
 		if settings.get("slow_mode"):
 			self.slowMode.setChecked(eval(settings['slow_mode']))
+
+		# Provider setting
+		self.providerLabel = QtWidgets.QLabel(self.groupBox_2)
+		self.providerLabel.setGeometry(QtCore.QRect(20, 50, 110, 20))
+		self.providerLabel.setText("Sumber Provider:")
+		self.providerSetting = QtWidgets.QComboBox(self.groupBox_2)
+		self.providerSetting.setGeometry(QtCore.QRect(130, 48, 140, 24))
+		self.providerSetting.addItem("Otakudesu", "otakudesu")
+		self.providerSetting.addItem("Samehadaku", "samehadaku")
+		cur_p = settings.get("provider", "otakudesu").lower()
+		idx = self.providerSetting.findData(cur_p)
+		if idx >= 0:
+			self.providerSetting.setCurrentIndex(idx)
 
 		self.testMPV.clicked.connect(self.testVideoPlayer)
 		self.ProxyTest.clicked.connect(self.testProxy)
@@ -943,9 +1071,14 @@ class Settings(QDialog, Ui_Settings):
 			data['https_proxy'] = self.HttpsProxy.text()
 
 		data['slow_mode'] = self.slowMode.isChecked()
+		data['provider'] = self.providerSetting.currentData()
 
 		setPresetMPV(self.presetA4k.currentText())
 		isok = saveSettings(data)
+		if self.parent() and hasattr(self.parent(), "providerCombo"):
+			p_idx = self.parent().providerCombo.findData(data['provider'])
+			if p_idx >= 0 and self.parent().providerCombo.currentIndex() != p_idx:
+				self.parent().providerCombo.setCurrentIndex(p_idx)
 		alert = QMessageBox()
 		if isok:
 			alert.setText("Data tersimpan!")
@@ -964,7 +1097,7 @@ def exitState():
 	printd("Exit...")
 	os._exit(0)
 
-t = threading.Thread(target=exitState)
+t = threading.Thread(target=exitState, daemon=True)
 t.start()
 
 

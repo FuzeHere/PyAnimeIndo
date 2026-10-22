@@ -90,6 +90,8 @@ def getEpisodes(url):
 def getDownload(url):
 	data = BeautifulSoup(requests.get(url, headers=headers).text, features="html.parser")
 	ret = {}
+	mp4_ret = {}
+	mkv_ret = {}
 
 	download = data.find('div', {'class': 'download'})
 	if download:
@@ -107,7 +109,28 @@ def getDownload(url):
 				fileurl = dlurl.a['href']
 			if "desudrive" in fileurl:
 				fileurl = desudrive(fileurl)
-			ret[filetype] = fileurl
+
+			if fileurl:
+				ft_lower = filetype.lower()
+				is_mp4 = "mp4" in ft_lower
+				q_norm = ""
+				if "1080" in ft_lower:
+					q_norm = "1080p"
+				elif "720" in ft_lower:
+					q_norm = "720p"
+				elif "480" in ft_lower:
+					q_norm = "480p"
+				elif "360" in ft_lower:
+					q_norm = "360p"
+
+				if is_mp4:
+					if q_norm:
+						mp4_ret[q_norm] = fileurl
+					mp4_ret[filetype] = fileurl
+				else:
+					if q_norm:
+						mkv_ret[q_norm] = fileurl
+					mkv_ret[filetype] = fileurl
 	elif batchlink := data.find('div', {'class': 'batchlink'}):
 		for dlurl in batchlink.findAll("li"):
 			filetype = dlurl.strong.text if dlurl.strong else ""
@@ -123,9 +146,22 @@ def getDownload(url):
 				fileurl = dlurl.a['href']
 			if "desudrive" in fileurl:
 				fileurl = desudrive(fileurl)
-			ret[filetype] = fileurl
+			if fileurl:
+				ret[filetype] = fileurl
+
+	# Merge: MP4 overrides MKV
+	ret = {**mkv_ret, **mp4_ret, **ret}
+
+	# Extract embed iframe
+	embed = (data.find('div', {'class': 'responsive-embed-stream'}) or
+			 data.find('div', {'class': 'player-embed'}))
+	if embed and embed.find('iframe'):
+		ifr_src = embed.find('iframe').get('src', '')
+		if ifr_src:
+			ret['embed'] = ifr_src
 
 	return ret
+
 
 
 def searchAnime(title):

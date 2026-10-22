@@ -1,0 +1,28 @@
+[Unit]
+Description=PyAnimeIndo Web Server (Netflix Style)
+After=network.target
+
+[Service]
+# Ganti User dengan user VPS Anda (misal: root atau ubuntu)
+User=root
+
+# Ganti WorkingDirectory sesuai lokasi folder proyek di VPS Anda
+WorkingDirectory=/var/www/PyAnimeIndo-1.2.3
+
+# Perintah menjalankan web_server.py
+ExecStart=/usr/bin/python3 web_server.py
+
+# Otomatis restart jika crash/terhenti
+Restart=always
+RestartSec=5
+
+# Variabel Lingkungan
+Environment=PYTHONUNBUFFERED=1
+Environment=PORT=8000
+
+# Batas resource (opsional)
+LimitNOFILE=65536
+
+[Install]
+# Menjadikan service otomatis menyala saat VPS booting / reboot
+WantedBy=multi-user.target

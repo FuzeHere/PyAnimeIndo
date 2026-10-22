@@ -94,12 +94,18 @@ def extract_stream_from_ep(ep_url, quality="720p"):
 				except Exception as ajax_err:
 					print("Mirror AJAX error:", ajax_err)
 
-		# 2. Fallback to default responsive-embed-stream iframe
-		embed = soup.find("div", class_="responsive-embed-stream")
+		# 2. Fallback to default embed stream iframe (Otakudesu or Samehadaku)
+		embed = (soup.find("div", class_="responsive-embed-stream") or
+				 soup.find("div", class_="player-embed") or
+				 soup.find("div", id="player-frame-wrapper") or
+				 soup.find("div", id="pembed"))
 		if embed and embed.find("iframe"):
-			direct = extract_direct_from_iframe(embed.find("iframe")["src"])
-			if direct:
-				return direct
+			ifr_src = embed.find("iframe").get("src", "")
+			if ifr_src:
+				direct = extract_direct_from_iframe(ifr_src)
+				if direct:
+					return direct
+				return ifr_src
 	except Exception as e:
 		print("extract_stream_from_ep error:", e)
 	return ""

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PyAnimeIndo — Nonton Streaming Anime Subtitle Indonesia</title>
+  <meta name="description" content="Platform streaming anime subtitle Indonesia modern ala Netflix, cepat, tanpa iklan dan gratis dengan pilihan provider Otakudesu & Samehadaku.">
+  
+  <!-- Google Fonts: Poppins & Righteous -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- ========================================================================
+       Top Navigation Bar (Netflix Glassmorphism)
+       ======================================================================== -->
+  <header class="navbar" id="navbar">
+    <div class="nav-left">
+      <div class="brand-logo" onclick="switchView('home')">
+        <i class="fa fa-play-circle"></i>
+        <span>PyAnimeIndo</span>
+        <span class="brand-badge">SUB INDO</span>
+      </div>
+
+      <nav>
+        <ul class="nav-links">
+          <li class="nav-item active" data-view="home">Beranda</li>
+          <li class="nav-item" data-view="schedule">Jadwal Rilis</li>
+          <li class="nav-item" data-view="genres">Kategori Genre</li>
+          <li class="nav-item" data-view="mylist">Daftar Saya</li>
+          <li class="nav-item" data-view="history">Riwayat</li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      <!-- Provider Switcher -->
+      <div class="provider-toggle" title="Pilih Sumber Anime">
+        <button class="provider-btn active" data-provider="samehadaku">Samehadaku</button>
+        <button class="provider-btn" data-provider="otakudesu">Otakudesu</button>
+      </div>
+
+      <!-- Live Search -->
+      <div class="search-wrapper">
+        <i class="fa fa-search search-icon"></i>
+        <input type="text" class="search-input" id="searchInput" placeholder="Cari anime..." autocomplete="off">
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       VIEW 1: Home View (Billboard Hero + Carousels)
+       ======================================================================== -->
+  <main id="viewHome">
+    <!-- Billboard Hero Section -->
+    <section class="hero" id="billboard">
+      <div class="hero-vignette"></div>
+      
+      <div class="hero-content">
+        <div class="hero-meta-badges">
+          <span class="badge-tag badge-red">TOP PICKS</span>
+          <span class="badge-tag badge-match" id="billboardEps">Episode Baru</span>
+          <span class="badge-tag badge-glass" id="billboardDay">Hari Rilis</span>
+          <span class="badge-tag badge-glass">1080p Ultra HD</span>
+        </div>
+
+        <h1 class="hero-title" id="billboardTitle">Memuat Anime Unggulan...</h1>
+        <p class="hero-synopsis" id="billboardSynopsis">
+          Nonton anime favorit tanpa iklan dengan kualitas terbaik langsung dari sumber terpercaya.
+        </p>
+
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="billboardPlayBtn">
+            <i class="fa fa-play"></i> Putar Sekarang
+          </button>
+          <button class="btn btn-secondary" id="billboardInfoBtn">
+            <i class="fa fa-info-circle"></i> Info Selengkapnya
+          </button>
+          <button class="btn btn-icon" id="billboardSaveBtn" title="Simpan ke Daftar Saya">
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Horizontal Rows -->
+    <div class="main-content">
+
+      <!-- Row 1: Sedang Tayang (Ongoing) -->
+      <section class="row-section">
+        <div class="row-header">
+          <h2 class="row-title">
+            <i class="fa fa-fire"></i> Sedang Tayang (Terbaru)
+          </h2>
+          <button class="row-more-btn" onclick="switchView('schedule')">
+            Jadwal Rilis <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="slider-container">
+          <button class="slider-arrow arrow-left" onclick="slideRow('rowOngoing', -1)">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <div class="slider-track" id="rowOngoing"></div>
+          <button class="slider-arrow arrow-right" onclick="slideRow('rowOngoing', 1)">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- Row 2: Rilis Hari Ini -->
+      <section class="row-section">
+        <div class="row-header">
+          <h2 class="row-title" id="todayRowTitle">
+            <i class="fa fa-calendar-alt"></i> Jadwal Rilis Hari Ini
+          </h2>
+          <button class="row-more-btn" onclick="switchView('schedule')">
+            Semua Hari <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="slider-container">
+          <button class="slider-arrow arrow-left" onclick="slideRow('rowToday', -1)">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <div class="slider-track" id="rowToday"></div>
+          <button class="slider-arrow arrow-right" onclick="slideRow('rowToday', 1)">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- Row 3: Daftar Tontonan Saya -->
+      <section class="row-section">
+        <div class="row-header">
+          <h2 class="row-title">
+            <i class="fa fa-bookmark"></i> Daftar Tontonan Saya
+          </h2>
+          <button class="row-more-btn" onclick="switchView('mylist')">
+            Kelola Daftar <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="slider-container">
+          <button class="slider-arrow arrow-left" onclick="slideRow('rowSaved', -1)">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <div class="slider-track" id="rowSaved"></div>
+          <button class="slider-arrow arrow-right" onclick="slideRow('rowSaved', 1)">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- Row 4: Lanjutkan Menonton -->
+      <section class="row-section">
+        <div class="row-header">
+          <h2 class="row-title">
+            <i class="fa fa-history"></i> Lanjutkan Menonton
+          </h2>
+          <button class="row-more-btn" onclick="switchView('history')">
+            Lihat Riwayat <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="slider-container">
+          <button class="slider-arrow arrow-left" onclick="slideRow('rowHistory', -1)">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <div class="slider-track" id="rowHistory"></div>
+          <button class="slider-arrow arrow-right" onclick="slideRow('rowHistory', 1)">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       VIEW 2: Schedule View (Jadwal Rilis Mingguan)
+       ======================================================================== -->
+  <section class="view-container" id="viewSchedule" style="display: none;">
+    <div class="view-header">
+      <h2 class="view-heading"><i class="fa fa-calendar-check" style="color: var(--primary);"></i> Jadwal Rilis Mingguan</h2>
+      <p class="view-subheading">Pilih hari untuk melihat daftar episode anime yang tayang setiap minggunya.</p>
+    </div>
+
+    <!-- Day Filter Tabs -->
+    <div class="tabs-scroll" id="scheduleTabsContainer"></div>
+
+    <!-- Anime Grid for Selected Day -->
+    <div class="anime-grid" id="scheduleGrid"></div>
+  </section>
+
+  <!-- ========================================================================
+       VIEW 3: Genres View (Kategori Genre Explorer)
+       ======================================================================== -->
+  <section class="view-container" id="viewGenres" style="display: none;">
+    <div class="view-header">
+      <h2 class="view-heading"><i class="fa fa-tags" style="color: var(--primary);"></i> Jelajahi Kategori Genre</h2>
+      <p class="view-subheading">Temukan ribuan anime berdasarkan genre favorit Anda.</p>
+    </div>
+
+    <!-- Genre Chips List -->
+    <div class="genre-chips-wrapper" id="genreChipsContainer"></div>
+
+    <div class="row-header" style="margin-bottom: 20px;">
+      <h3 class="row-title" id="genreSelectedTitle">Anime Genre</h3>
+    </div>
+
+    <!-- Genre Anime Cards Grid -->
+    <div class="anime-grid" id="genreGrid"></div>
+  </section>
+
+  <!-- ========================================================================
+       VIEW 4: My List View (Daftar Bookmark)
+       ======================================================================== -->
+  <section class="view-container" id="viewMyList" style="display: none;">
+    <div class="view-header">
+      <h2 class="view-heading"><i class="fa fa-bookmark" style="color: var(--primary);"></i> Daftar Tontonan Saya</h2>
+      <p class="view-subheading">Koleksi anime yang Anda simpan untuk ditonton kapan saja.</p>
+    </div>
+
+    <div class="anime-grid" id="myListGrid"></div>
+  </section>
+
+  <!-- ========================================================================
+       VIEW 5: History View (Riwayat Tontonan)
+       ======================================================================== -->
+  <section class="view-container" id="viewHistory" style="display: none;">
+    <div class="view-header">
+      <h2 class="view-heading"><i class="fa fa-clock-rotate-left" style="color: var(--primary);"></i> Riwayat Nonton</h2>
+      <p class="view-subheading">Daftar episode anime yang baru saja Anda putar.</p>
+    </div>
+
+    <div class="anime-grid" id="historyGrid"></div>
+  </section>
+
+  <!-- ========================================================================
+       VIEW 6: Search View (Hasil Pencarian)
+       ======================================================================== -->
+  <section class="view-container" id="viewSearch" style="display: none;">
+    <div class="view-header">
+      <h2 class="view-heading" id="searchQueryTitle">Hasil Pencarian</h2>
+      <p class="view-subheading">Menampilkan judul yang cocok dari penyedia aktif.</p>
+    </div>
+
+    <div class="anime-grid" id="searchGrid"></div>
+  </section>
+
+  <!-- ========================================================================
+       MODAL 1: Detail Anime Modal (Netflix Detail Preview)
+       ======================================================================== -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal-dialog">
+      <button class="modal-close-btn"><i class="fa fa-times"></i></button>
+
+      <!-- Modal Hero Header -->
+      <div class="modal-hero" id="modalHero">
+        <div class="modal-hero-vignette"></div>
+        <div class="modal-hero-content">
+          <h2 class="modal-title" id="modalTitle">Judul Anime</h2>
+          <div class="hero-actions">
+            <button class="btn btn-primary" id="modalPlayLatestBtn">
+              <i class="fa fa-play"></i> Putar Episode Terbaru
+            </button>
+            <button class="btn btn-secondary" id="modalSaveBtn">
+              <i class="fa fa-plus"></i> Daftar Saya
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <div class="modal-details-grid">
+          <div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 10px; color: var(--text-main);">Sinopsis Cerita</h4>
+            <p class="modal-synopsis" id="modalSynopsis">Memuat sinopsis...</p>
+          </div>
+
+          <div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 10px; color: var(--text-main);">Detail Informasi</h4>
+            <div class="modal-meta-list" id="modalMetaList"></div>
+          </div>
+        </div>
+
+        <!-- Episodes List Section -->
+        <div class="episodes-section">
+          <div class="episodes-header">
+            <span><i class="fa fa-list-ul" style="color: var(--primary);"></i> Daftar Episode</span>
+          </div>
+          <div class="episodes-grid" id="modalEpisodesGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: Video Player Modal (Streaming Player)
+       ======================================================================== -->
+  <div class="modal-backdrop" id="playerModal">
+    <div class="modal-dialog player-dialog">
+      <button class="modal-close-btn"><i class="fa fa-times"></i></button>
+
+      <!-- Player Frame Wrapper -->
+      <div class="player-wrapper" id="playerWrapper">
+        <div class="player-alert-banner" id="playerAlertBanner" style="display: none;">
+          <i class="fa fa-sync-alt fa-spin"></i>
+          <span id="playerAlertText">Mencari server video terbaik...</span>
+        </div>
+      </div>
+
+      <!-- Controls & Episode Info Bar -->
+      <div class="player-controls-bar">
+        <div class="player-info-block">
+          <span class="player-ep-title" id="playerEpTitle">Episode Title</span>
+          <span class="player-anime-name" id="playerAnimeName">Anime Title</span>
+        </div>
+
+        <div class="player-actions">
+          <button class="btn-refresh-server" id="btnRefreshServer" title="Cari atau beralih ke server video lain">
+            <i class="fa fa-sync-alt"></i> <span>Cari Server Lain</span>
+          </button>
+          <div class="quality-pills" id="playerQualityPills" title="Pilih Resolusi Video"></div>
+        </div>
+      </div>
+
+      <!-- Server Switcher Bar -->
+      <div class="player-server-bar" id="playerServerBar" style="padding: 10px 24px; background: #0c0c0c; border-top: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <span class="server-badge" id="playerServerBadge">
+          <i class="fa fa-server" style="color: var(--primary);"></i> Menghubungkan server...
+        </span>
+        <div class="server-pills" id="playerServerPills"></div>
+      </div>
+
+      <!-- Direct Downloads Section -->
+      <div class="download-links-container">
+        <div class="download-title">
+          <i class="fa fa-download" style="color: var(--primary);"></i> Tautan Unduhan / Offline Mirror:
+        </div>
+        <div class="download-tags" id="playerDownloadTags"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Toast Notification
+       ======================================================================== -->
+  <div class="toast" id="toast">
+    <i class="fa fa-info-circle" style="color: var(--primary);"></i>
+    <span id="toastText">Pemberitahuan</span>
+  </div>
+
+  <!-- ========================================================================
+       Mobile Bottom Navigation
+       ======================================================================== -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-item active" data-view="home">
+      <i class="fa fa-home"></i>
+      <span>Beranda</span>
+    </div>
+    <div class="mobile-nav-item" data-view="schedule">
+      <i class="fa fa-calendar-alt"></i>
+      <span>Jadwal</span>
+    </div>
+    <div class="mobile-nav-item" data-view="genres">
+      <i class="fa fa-tags"></i>
+      <span>Genre</span>
+    </div>
+    <div class="mobile-nav-item" data-view="mylist">
+      <i class="fa fa-bookmark"></i>
+      <span>Daftar</span>
+    </div>
+    <div class="mobile-nav-item" data-view="history">
+      <i class="fa fa-history"></i>
+      <span>Riwayat</span>
+    </div>
+  </nav>
+
+  <!-- Application Script -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

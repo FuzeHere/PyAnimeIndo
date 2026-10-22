@@ -1,16 +1,18 @@
-# PyAnimeIndo v1.2.4
+# PyAnimeIndo v1.2.5
 
 Nonton anime subtitle Indonesia tanpa iklan. Dengan GUI berbasis **PyQt5** dan **Material UI**, serta **MPV Player** untuk streaming tanpa hambatan.
 
 > **Catatan Proyek & Pengembang**:
-> Proyek ini merupakan kelanjutan dari proyek original **[PyAnimeIndo oleh Ayra Hikari](https://github.com/AyraHikari/PyAnimeIndo)** yang diperbarui dan dipelihara ke **Versi 1.2.4**.
+> Proyek ini merupakan kelanjutan dari proyek original **[PyAnimeIndo oleh Ayra Hikari](https://github.com/AyraHikari/PyAnimeIndo)** yang diperbarui dan dipelihara ke **Versi 1.2.5**.
 > 
-> **Pembaruan di v1.2.4**:
+> **Pembaruan di v1.2.5**:
+> - Integrasi provider baru **Samehadaku** (`https://v2.samehadaku.how/`) dengan parser REST API & web scraping.
+> - Multi-provider selector (pilih sumber Otakudesu / Samehadaku langsung dari antarmuka utama atau Pengaturan).
+> - Dukungan resolusi link unduhan & streaming Pixeldrain otomatis untuk Samehadaku.
+> - Kompatibilitas silang untuk Bookmark/Riwayat antar-provider.
 > - Pembaruan domain aktif host Otakudesu (`otakudesu.blog`).
 > - Ekstraksi streaming universal (mendukung server Pixeldrain, Krakenfiles, VikingFile).
 > - Deteksi otomatis lokasi installer MPV Player (WinGet / Path sistem).
-> - Perbaikan penanganan metadata & pencegahan crash `SyntaxError`/`TypeError`.
-> - Pengemasan executable mandiri (`pyanimeindo.exe`).
 
 ---
 
@@ -29,9 +31,23 @@ Kloning repositori ini dan jalankan perintah berikut pada terminal:
 pip install -r requirements.txt
 ```
 
-### 3. Menjalankan Aplikasi dalam Mode Pengkodingan
-Untuk menjalankan aplikasi secara langsung dari source code Python:
+### 3. Menjalankan Aplikasi
 
+#### A. Mode Web Ready (Antarmuka Netflix Responsive)
+Untuk menjalankan versi web modern ala Netflix di browser komputer atau HP/tablet Anda:
+- **Windows**: Dobel-klik file [`run_web.bat`](file:///e:/Coding/PyAnimeIndo-1.2.3/run_web.bat) atau jalankan:
+  ```bash
+  python web_server.py
+  ```
+- **Linux / macOS / VPS**:
+  ```bash
+  chmod +x run_web.sh
+  ./run_web.sh
+  ```
+- Buka browser di: **`http://localhost:8000`**
+
+#### B. Mode Desktop GUI (PyQt5)
+Untuk menjalankan aplikasi desktop original berbasis PyQt5:
 ```bash
 python pyanimeindo.py
 ```
@@ -76,7 +92,7 @@ File `.exe` hasil kompilasi akan otomatis dibuat di folder **`dist/pyanimeindo.e
 ## Kredit & Pengembang
 - **Programmer/Designer Original**: [Ayra Hikari](https://github.com/AyraHikari)
 - **Ikon**: [Heroicons](https://heroicons.com)
-- **Host Provider**: Otakudesu
+- **Host Provider**: Otakudesu & Samehadaku (`v2.samehadaku.how`)
 - **Upscaler/Render**: [Anime4K](https://github.com/bloc97/Anime4K)
 - **Video Player**: [MPV Player](https://mpv.io/)
 
