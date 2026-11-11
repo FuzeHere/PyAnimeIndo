@@ -76,9 +76,16 @@ class ProviderRoutingTests(unittest.TestCase):
             )
 
         self.assertEqual(get.call_args.kwargs["headers"]["Range"], "bytes=0-1023")
+        self.assertEqual(get.call_args.kwargs["headers"]["Referer"], "https://nimegami.id/")
         self.assertEqual(response.status_code, 206)
         self.assertEqual(response.headers["content-range"], "bytes 0-1023/5000")
         self.assertEqual(response.headers["content-type"], "video/mp4")
+
+    def test_nimegami_stream_candidates_includes_downloads(self):
+        streams = {"720p": "https://stream-stor.berkasdrive.com/v/b"}
+        with patch.object(nimegami, "getDownload", return_value=streams):
+            result = web_server.stream_candidates("https://nimegami.id/demo/#episode_1", "720p")
+        self.assertEqual(result["downloads"], streams)
 
     def test_nimegami_video_proxy_rejects_non_provider_hosts(self):
         with patch.object(web_server.requests, "get") as get:

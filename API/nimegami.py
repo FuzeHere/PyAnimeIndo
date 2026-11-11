@@ -208,11 +208,12 @@ def getDownload(url):
 
     # The player page carries the actual MP4 URL in #player[data-src]. This is
     # needed because Nimegami's player page disallows framing on other origins.
-    for quality, player_url in player_routes.items():
+    def _fetch_player_media(item):
+        quality, player_url = item
         try:
             player_soup = _soup(player_url)
         except requests.RequestException:
-            continue
+            return quality, ""
         player = player_soup.select_one("#player[data-src]")
         media_url = player.get("data-src", "") if player else ""
         try:
@@ -220,8 +221,20 @@ def getDownload(url):
             if (parsed_media.scheme == "https" and parsed_media.hostname
                     and (parsed_media.hostname == "berkasdrive.com"
                          or parsed_media.hostname.endswith(".berkasdrive.com"))):
-                streams[quality] = media_url
+                return quality, media_url
         except ValueError:
-            continue
+            pass
+        return quality, ""
+
+    if len(player_routes) > 1:
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(player_routes), 4)) as executor:
+            for quality, media_url in executor.map(_fetch_player_media, player_routes.items()):
+                if media_url:
+                    streams[quality] = media_url
+    elif len(player_routes) == 1:
+        quality, media_url = _fetch_player_media(next(iter(player_routes.items())))
+        if media_url:
+            streams[quality] = media_url
 
     return streams

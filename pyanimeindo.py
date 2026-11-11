@@ -19,6 +19,7 @@ from UI.Streaming import Ui_Form as Ui_Streaming
 from API.anime4k import downloadAnime4K, writeLowA4K, writeHighA4K, uninstallA4kdir
 import API.otakudesu as otakudesu_api
 import API.samehadaku as samehadaku_api
+import API.nimegami as nimegami_api
 from API.extractor.zdl import zdl
 from API.extractor.krakenfiles import getStream
 from utils.database import loadSettings, saveSettings, saveDataAnime, getSavedAnime, getSavedAnimeList, deleteDataAnime, saveHistoryAnime, getHistoryAnime, getHistoryAnimeList
@@ -35,6 +36,11 @@ AVAILABLE_PROVIDERS = {
 		"name": "Samehadaku",
 		"module": samehadaku_api,
 		"host": "https://v2.samehadaku.how/"
+	},
+	"nimegami": {
+		"name": "Nimegami",
+		"module": nimegami_api,
+		"host": "https://nimegami.id/"
 	}
 }
 
@@ -58,6 +64,8 @@ def get_provider_by_url(url):
 		return samehadaku_api
 	elif "otakudesu" in url_lower:
 		return otakudesu_api
+	elif "nimegami" in url_lower:
+		return nimegami_api
 	return get_provider()
 
 def getOngoing(page=1):
@@ -160,6 +168,7 @@ class MainWindow(QMainWindow, Ui_AnimeIndo):
 		""")
 		self.providerCombo.addItem("Otakudesu", "otakudesu")
 		self.providerCombo.addItem("Samehadaku", "samehadaku")
+		self.providerCombo.addItem("Nimegami", "nimegami")
 		curr_p = get_current_provider_key()
 		idx = self.providerCombo.findData(curr_p)
 		if idx >= 0:
@@ -959,6 +968,7 @@ class Settings(QDialog, Ui_Settings):
 		self.providerSetting.setGeometry(QtCore.QRect(130, 48, 140, 24))
 		self.providerSetting.addItem("Otakudesu", "otakudesu")
 		self.providerSetting.addItem("Samehadaku", "samehadaku")
+		self.providerSetting.addItem("Nimegami", "nimegami")
 		cur_p = settings.get("provider", "otakudesu").lower()
 		idx = self.providerSetting.findData(cur_p)
 		if idx >= 0:

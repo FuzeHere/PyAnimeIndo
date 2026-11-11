@@ -115,10 +115,14 @@ def getStream(url, ep_url="", quality=""):
 		return ""
 	try:
 		if url and url.startswith("http"):
+			if "berkasdrive.com" in url:
+				return url
 			r = requests.get(url, headers=headers, allow_redirects=True, timeout=10)
 			final_url = r.url
 
-			if "pixeldrain.com" in final_url or "pdrain" in final_url:
+			if "berkasdrive.com" in final_url:
+				return final_url
+			elif "pixeldrain.com" in final_url or "pdrain" in final_url:
 				file_id = final_url.split('/')[-1]
 				p_url = f"https://pixeldrain.com/api/file/{file_id}"
 				try:

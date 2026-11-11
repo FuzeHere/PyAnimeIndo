@@ -233,17 +233,19 @@ def nimegami_video_proxy(request: Request, url: str = Query(...)):
 def _proxy_video_response(request: Request, url: str):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "*/*"
+        "Accept": "*/*",
+        "Referer": "https://nimegami.id/",
     }
     range_header = request.headers.get("range")
     if range_header:
         headers["Range"] = range_header
 
     try:
-        upstream = requests.get(url, headers=headers, stream=True, timeout=12)
+        upstream = requests.get(url, headers=headers, stream=True, timeout=20)
         resp_headers = {
             "Content-Type": upstream.headers.get("Content-Type", "video/mp4"),
             "Accept-Ranges": "bytes",
+            "Content-Disposition": "inline",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
             "Access-Control-Allow-Headers": "Range, Content-Type",
@@ -258,7 +260,7 @@ def _proxy_video_response(request: Request, url: str):
 
         def iter_stream():
             try:
-                for chunk in upstream.iter_content(chunk_size=128 * 1024):
+                for chunk in upstream.iter_content(chunk_size=256 * 1024):
                     if chunk:
                         yield chunk
             except Exception:
@@ -317,7 +319,7 @@ def stream_candidates(ep_url: str = Query(...), quality: str = Query("720p")):
             "requested_quality": q_target,
             "candidates": candidates,
             "available_qualities": available or ["720p"],
-            "downloads": {},
+            "downloads": dl,
         }
 
     # Find matching key in dl

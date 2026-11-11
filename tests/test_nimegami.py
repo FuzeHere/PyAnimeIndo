@@ -107,6 +107,19 @@ class NimegamiParserTests(unittest.TestCase):
                 nimegami.getGenreAnime("https://example.org/collect")
             get.assert_not_called()
 
+    def test_extractor_recognizes_berkasdrive_direct_stream(self):
+        from API.extractor.krakenfiles import getStream
+        media_url = "https://stream-stor.berkasdrive.com/v/v1.abc123token"
+        with patch("API.extractor.krakenfiles.requests.get") as get:
+            stream_result = getStream(media_url)
+            self.assertEqual(stream_result, media_url)
+            get.assert_not_called()
+
+    def test_desktop_provider_routes_nimegami_urls(self):
+        import pyanimeindo
+        self.assertIn("nimegami", pyanimeindo.AVAILABLE_PROVIDERS)
+        self.assertIs(pyanimeindo.get_provider_by_url("https://nimegami.id/demo-series/"), nimegami)
+
 
 if __name__ == "__main__":
     unittest.main()

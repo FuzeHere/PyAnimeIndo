@@ -435,7 +435,7 @@ async function playEpisode(epUrl, animeTitle, epTitle, forcedQuality = null) {
   playerEpTitle.textContent = epTitle;
 
   const isNimegamiEpisode = epUrl.includes('nimegami.id');
-  const defaultQuality = isNimegamiEpisode ? '480p' : (state.activeQuality || '720p');
+  const defaultQuality = state.activeQuality || '720p';
   const chosenQuality = forcedQuality || defaultQuality;
   state.activeQuality = chosenQuality;
 
@@ -604,14 +604,13 @@ function mountCurrentCandidate() {
   showPlayerAlert(`Menghubungkan ke ${current.name}...`, true);
 
   if (current.type === 'video') {
-    // HTML5 Video with auto-fallback watchdog
+    // HTML5 Video
     playerWrapper.innerHTML = `
       <div class="player-alert-banner" id="playerAlertBanner">
         <i class="fa fa-sync-alt fa-spin"></i>
         <span id="playerAlertText">Menghubungkan ke ${current.name}...</span>
       </div>
-      <video id="activeVideoPlayer" class="player-element" controls autoplay playsinline controlsList="nodownload">
-        <source src="${current.url}" type="video/mp4">
+      <video id="activeVideoPlayer" class="player-element" src="${current.url}" controls playsinline preload="auto" controlsList="nodownload">
         Browser Anda tidak mendukung pemutar video HTML5.
       </video>
     `;
@@ -629,6 +628,17 @@ function mountCurrentCandidate() {
       }
     };
 
+    video.addEventListener('loadedmetadata', () => {
+      clearPlaybackTimers();
+      showPlayerAlert(`Terhubung ke ${current.name}`, false);
+      setTimeout(hidePlayerAlert, 2000);
+    });
+
+    video.addEventListener('canplay', () => {
+      clearPlaybackTimers();
+    });
+
+    video.addEventListener('play', onPlaybackStarted);
     video.addEventListener('playing', onPlaybackStarted);
     video.addEventListener('timeupdate', () => {
       if (video.currentTime > 0.3) {
@@ -644,38 +654,30 @@ function mountCurrentCandidate() {
       }
     });
 
-    // Stalled / Waiting listener: 4.5-second timeout
-    video.addEventListener('stalled', () => {
-      if (!activePlayback.isResolvedPlaying) {
-        if (!activePlayback.stallTimer) {
-          activePlayback.stallTimer = setTimeout(() => {
-            if (!activePlayback.isResolvedPlaying && (video.paused || video.currentTime === 0)) {
-              tryNextCandidate(`Server ${current.name} mengalami freeze/stalled. Mengganti server...`);
-            }
-          }, 4500);
-        }
-      }
-    });
-
-    video.addEventListener('waiting', () => {
-      if (!activePlayback.isResolvedPlaying) {
-        if (!activePlayback.stallTimer) {
-          activePlayback.stallTimer = setTimeout(() => {
-            if (!activePlayback.isResolvedPlaying && (video.paused || video.currentTime === 0)) {
-              tryNextCandidate(`Server ${current.name} tidak merespons. Mengganti server...`);
-            }
-          }, 4500);
-        }
-      }
-    });
-
-    // Watchdog timer: If within 6 seconds the video hasn't played, auto-failover
+    // Watchdog timer: Only failover if failed to connect/load metadata within 12 seconds
     activePlayback.watchdogTimer = setTimeout(() => {
-      if (!activePlayback.isResolvedPlaying && video.currentTime === 0) {
-        console.warn('Watchdog timeout on candidate:', current.name);
+      if (!activePlayback.isResolvedPlaying && video.readyState === 0) {
+        console.warn('Watchdog timeout connecting to candidate:', current.name);
         tryNextCandidate(`Koneksi ${current.name} lambat/terputus. Mencari server pengganti...`);
       }
-    }, 6000);
+    }, 12000);
+
+    // Attempt autoplay if permitted by browser
+    try {
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          onPlaybackStarted();
+        }).catch((err) => {
+          // Autoplay blocked by browser policy (user gesture required)
+          console.log('Autoplay blocked by browser policy:', err);
+          showPlayerAlert('Video siap. Tekan tombol Play untuk memutar', false);
+          setTimeout(hidePlayerAlert, 3500);
+        });
+      }
+    } catch (e) {
+      console.warn('video.play() threw:', e);
+    }
 
   } else {
     // Embed iframe (Blogger / Desustream / Official CDN)
