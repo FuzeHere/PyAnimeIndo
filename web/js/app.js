@@ -434,7 +434,9 @@ async function playEpisode(epUrl, animeTitle, epTitle, forcedQuality = null) {
   playerAnimeName.textContent = animeTitle;
   playerEpTitle.textContent = epTitle;
 
-  const chosenQuality = forcedQuality || state.activeQuality || '720p';
+  const isNimegamiEpisode = epUrl.includes('nimegami.id');
+  const defaultQuality = isNimegamiEpisode ? '480p' : (state.activeQuality || '720p');
+  const chosenQuality = forcedQuality || defaultQuality;
   state.activeQuality = chosenQuality;
 
   playerWrapper.innerHTML = `
@@ -498,10 +500,9 @@ async function playEpisode(epUrl, animeTitle, epTitle, forcedQuality = null) {
     availableQualities.forEach(q => {
       const pill = document.createElement('button');
       pill.className = `q-pill ${q === chosenQuality ? 'active' : ''}`;
+      pill.dataset.quality = q;
       pill.textContent = q.toUpperCase();
       pill.onclick = () => {
-        document.querySelectorAll('.q-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
         playEpisode(epUrl, animeTitle, epTitle, q);
       };
       playerQualityPills.appendChild(pill);
@@ -594,6 +595,12 @@ function mountCurrentCandidate() {
   }
 
   renderServerPills();
+  if (current.quality) {
+    state.activeQuality = current.quality;
+    document.querySelectorAll('#playerQualityPills .q-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.dataset.quality === current.quality);
+    });
+  }
   showPlayerAlert(`Menghubungkan ke ${current.name}...`, true);
 
   if (current.type === 'video') {
