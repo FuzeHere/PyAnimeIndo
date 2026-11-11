@@ -19,6 +19,7 @@ if BASE_DIR not in sys.path:
 import API.otakudesu as otakudesu_api
 import API.samehadaku as samehadaku_api
 import API.nimegami as nimegami_api
+import API.mal as mal_api
 from API.extractor.krakenfiles import getStream
 from utils.database import (
     loadSettings, saveSettings, loadData, saveData,
@@ -170,9 +171,27 @@ def episodes(url: str):
         raise HTTPException(status_code=400, detail="URL provider tidak dikenal")
     try:
         data = mod.getEpisodes(url)
+        # Attempt to attach basic MyAnimeList metadata if title exists
+        try:
+            anime_title = data.get("title", "")
+            if anime_title:
+                data["mal"] = mal_api.get_mal_info(anime_title, fetch_full=False)
+        except Exception:
+            pass
         return {"success": True, "url": url, "data": data}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+@app.get("/api/mal")
+def mal_detail(title: str = Query(...)):
+    if not title:
+        raise HTTPException(status_code=400, detail="Missing title parameter")
+    try:
+        data = mal_api.get_mal_info(title, fetch_full=True)
+        return {"success": True, "data": data}
+    except Exception as e:
+        return {"success": False, "error": str(e), "data": {"found": False}}
 
 
 @app.get("/api/download")

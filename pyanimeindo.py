@@ -20,6 +20,7 @@ from API.anime4k import downloadAnime4K, writeLowA4K, writeHighA4K, uninstallA4k
 import API.otakudesu as otakudesu_api
 import API.samehadaku as samehadaku_api
 import API.nimegami as nimegami_api
+import API.mal as mal_api
 from API.extractor.zdl import zdl
 from API.extractor.krakenfiles import getStream
 from utils.database import loadSettings, saveSettings, saveDataAnime, getSavedAnime, getSavedAnimeList, deleteDataAnime, saveHistoryAnime, getHistoryAnime, getHistoryAnimeList
@@ -605,6 +606,27 @@ class AnimeInfo(QDialog, Ui_AnimeInfo):
 						self.star4.setStyleSheet("width: 30px;\nheight: 30px;\nleft: 318px;\ntop: 132px;\nborder-radius: 2px;\nborder-image: url(:/icons/resources/star_on.svg);")
 					if skor >= 5:
 						self.star5.setStyleSheet("width: 30px;\nheight: 30px;\nleft: 318px;\ntop: 132px;\nborder-radius: 2px;\nborder-image: url(:/icons/resources/star_on.svg);")
+
+		# Enrich score & details from MyAnimeList if missing
+		try:
+			mal_data = mal_api.get_mal_info(dataTitle, fetch_full=False)
+			if mal_data.get("found") and mal_data.get("score"):
+				try:
+					mal_skor = int(float(mal_data["score"]) / 2)
+					if mal_skor >= 1:
+						self.star1.setStyleSheet("width: 30px;\nheight: 30px;\nleft: 318px;\ntop: 132px;\nborder-radius: 2px;\nborder-image: url(:/icons/resources/star_on.svg);")
+					if mal_skor >= 2:
+						self.star2.setStyleSheet("width: 30px;\nheight: 30px;\nleft: 318px;\ntop: 132px;\nborder-radius: 2px;\nborder-image: url(:/icons/resources/star_on.svg);")
+					if mal_skor >= 3:
+						self.star3.setStyleSheet("width: 30px;\nheight: 30px;\nleft: 318px;\ntop: 132px;\nborder-radius: 2px;\nborder-image: url(:/icons/resources/star_on.svg);")
+					if mal_skor >= 4:
+						self.star4.setStyleSheet("width: 30px;\nheight: 30px;\nleft: 318px;\ntop: 132px;\nborder-radius: 2px;\nborder-image: url(:/icons/resources/star_on.svg);")
+					if mal_skor >= 5:
+						self.star5.setStyleSheet("width: 30px;\nheight: 30px;\nleft: 318px;\ntop: 132px;\nborder-radius: 2px;\nborder-image: url(:/icons/resources/star_on.svg);")
+				except Exception:
+					pass
+		except Exception:
+			pass
 
 		self.setWindowTitle(remove_first_end_spaces(data['info'].lower().split("judul:")[1].split("\n")[0]).title())
 

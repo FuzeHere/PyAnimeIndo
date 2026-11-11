@@ -280,12 +280,16 @@ async function openDetailModal(url, autoPlay = false) {
   const modalEpisodesGrid = document.getElementById('modalEpisodesGrid');
   const modalSaveBtn = document.getElementById('modalSaveBtn');
   const modalPlayLatestBtn = document.getElementById('modalPlayLatestBtn');
+  const modalMalBadges = document.getElementById('modalMalBadges');
+  const modalMalLinkBtn = document.getElementById('modalMalLinkBtn');
 
   // Loading state
   modalTitle.textContent = 'Memuat data anime...';
   modalSynopsis.textContent = 'Mengambil sinopsis dan daftar episode langsung dari server...';
   modalEpisodesGrid.innerHTML = '<div class="netflix-spinner" style="margin: 20px auto;"></div>';
   modalMetaList.innerHTML = '';
+  if (modalMalBadges) modalMalBadges.innerHTML = '';
+  if (modalMalLinkBtn) modalMalLinkBtn.style.display = 'none';
 
   try {
     const res = await fetch(`${API_BASE}/api/episodes?url=${encodeURIComponent(url)}`);
@@ -321,6 +325,102 @@ async function openDetailModal(url, autoPlay = false) {
       });
     }
     modalMetaList.innerHTML = metaHtml;
+
+    // Render MyAnimeList badges & details
+    const renderMalData = (mal) => {
+      if (!mal || !mal.found) return;
+      state.activeAnime.mal = mal;
+
+      // Render MAL badges in hero
+      if (modalMalBadges) {
+        let badgesHtml = '';
+        if (mal.score) {
+          badgesHtml += `<span class="mal-score-pill" title="Skor MyAnimeList"><i class="fa fa-star"></i> Skor MAL: <strong>${mal.score}</strong></span>`;
+        }
+        if (mal.ranked) {
+          badgesHtml += `<span class="mal-stat-tag" title="Peringkat Global MyAnimeList"><i class="fa-solid fa-trophy"></i> Rank ${mal.ranked}</span>`;
+        }
+        if (mal.popularity) {
+          badgesHtml += `<span class="mal-stat-tag" title="Tingkat Popularitas di MyAnimeList"><i class="fa-solid fa-fire"></i> Pop ${mal.popularity}</span>`;
+        }
+        if (mal.members) {
+          badgesHtml += `<span class="mal-stat-tag" title="Jumlah Member MyAnimeList"><i class="fa-solid fa-users"></i> ${mal.members}</span>`;
+        }
+        modalMalBadges.innerHTML = badgesHtml;
+      }
+
+      // External MAL Link button
+      if (modalMalLinkBtn && mal.mal_url) {
+        modalMalLinkBtn.href = mal.mal_url;
+        modalMalLinkBtn.style.display = 'inline-flex';
+      }
+
+      // Synopsis fallback / supplement
+      if (mal.synopsis && (!data.sinopsis || data.sinopsis.length < 30)) {
+        modalSynopsis.textContent = mal.synopsis;
+      }
+
+      // Append rich metadata rows to meta list
+      const malMetaItems = [];
+      if (mal.score) {
+        malMetaItems.push({ label: 'Skor MyAnimeList', val: `★ ${mal.score} / 10` });
+      }
+      if (mal.studios && mal.studios.length) {
+        malMetaItems.push({ label: 'Studio (MAL)', val: mal.studios.join(', ') });
+      }
+      if (mal.genres && mal.genres.length) {
+        malMetaItems.push({ label: 'Genre (MAL)', val: mal.genres.join(', ') });
+      }
+      if (mal.japanese_title) {
+        malMetaItems.push({ label: 'Judul Asli (JP)', val: mal.japanese_title });
+      }
+      if (mal.english_title) {
+        malMetaItems.push({ label: 'Judul Inggris', val: mal.english_title });
+      }
+      if (mal.status) {
+        malMetaItems.push({ label: 'Status (MAL)', val: mal.status });
+      }
+      if (mal.aired) {
+        malMetaItems.push({ label: 'Masa Tayang', val: mal.aired });
+      }
+      if (mal.rating) {
+        malMetaItems.push({ label: 'Rating Usia', val: mal.rating });
+      }
+      if (mal.source) {
+        malMetaItems.push({ label: 'Sumber Adaptasi', val: mal.source });
+      }
+
+      // Only add items not already in modalMetaList
+      if (malMetaItems.length > 0) {
+        let extraHtml = '';
+        malMetaItems.forEach(item => {
+          if (!metaHtml.toLowerCase().includes(item.label.toLowerCase())) {
+            extraHtml += `
+              <div class="modal-meta-item">
+                <span class="modal-meta-label">${item.label}</span>
+                <span class="modal-meta-value">${item.val}</span>
+              </div>
+            `;
+          }
+        });
+        modalMetaList.insertAdjacentHTML('beforeend', extraHtml);
+      }
+    };
+
+    // Render basic MAL data if already provided by /api/episodes
+    if (data.mal && data.mal.found) {
+      renderMalData(data.mal);
+    }
+
+    // Fetch full details from MyAnimeList
+    fetch(`${API_BASE}/api/mal?title=${encodeURIComponent(data.title)}`)
+      .then(r => r.json())
+      .then(malJson => {
+        if (malJson.success && malJson.data && malJson.data.found) {
+          renderMalData(malJson.data);
+        }
+      })
+      .catch(() => {});
 
     // Save Button
     modalSaveBtn.onclick = () => toggleBookmark(state.activeAnime);
