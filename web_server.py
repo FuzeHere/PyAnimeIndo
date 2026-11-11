@@ -211,6 +211,26 @@ def video_proxy(request: Request, url: str = Query(...)):
     if not url:
         raise HTTPException(status_code=400, detail="Missing url parameter")
 
+    return _proxy_video_response(request, url)
+
+
+@app.get("/api/nimegami-video-proxy")
+@app.head("/api/nimegami-video-proxy")
+def nimegami_video_proxy(request: Request, url: str = Query(...)):
+    if not url:
+        raise HTTPException(status_code=400, detail="Missing url parameter")
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        hostname = parsed.hostname.lower().rstrip(".") if parsed.hostname else ""
+        allowed_host = hostname == "berkasdrive.com" or hostname.endswith(".berkasdrive.com")
+        if parsed.scheme != "https" or not allowed_host or parsed.port not in (None, 443):
+            raise HTTPException(status_code=400, detail="URL media Nimegami tidak valid")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="URL media Nimegami tidak valid")
+    return _proxy_video_response(request, url)
+
+
+def _proxy_video_response(request: Request, url: str):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "*/*"
@@ -233,6 +253,7 @@ def video_proxy(request: Request, url: str = Query(...)):
                 resp_headers[h] = upstream.headers[h]
 
         if request.method == "HEAD":
+            upstream.close()
             return StreamingResponse(iter([]), status_code=upstream.status_code, headers=resp_headers)
 
         def iter_stream():
@@ -242,6 +263,8 @@ def video_proxy(request: Request, url: str = Query(...)):
                         yield chunk
             except Exception:
                 pass
+            finally:
+                upstream.close()
 
         return StreamingResponse(
             iter_stream(),
@@ -274,17 +297,17 @@ def stream_candidates(ep_url: str = Query(...), quality: str = Query("720p")):
     if not any(k in q_target for k in ["1080", "720", "480", "360"]):
         q_target = "720p"
 
-    # Nimegami returns hosted player pages rather than direct video files.
-    # Send those pages to the existing iframe player and skip file-host extraction.
+    # Nimegami exposes MP4 URLs on BerkasDrive. Proxy them to support range
+    # requests without relying on a cross-origin iframe that the site blocks.
     if mod is nimegami_api:
         available = [q for q in std_qualities if dl.get(q)]
         order = [q_target] + [q for q in ["720p", "480p", "1080p", "360p"] if q != q_target]
         candidates = [
             {
                 "id": f"nimegami_{q}",
-                "name": f"Nimegami Player ({q.upper()})",
-                "type": "iframe",
-                "url": dl[q],
+                "name": f"Nimegami MP4 ({q.upper()})",
+                "type": "video",
+                "url": f"/api/nimegami-video-proxy?url={urllib.parse.quote(dl[q], safe='')}",
                 "quality": q,
             }
             for q in order if dl.get(q)

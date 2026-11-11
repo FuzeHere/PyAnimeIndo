@@ -56,20 +56,37 @@ class NimegamiParserTests(unittest.TestCase):
         self.assertEqual(result["episodes"][0]["url"], "https://nimegami.id/demo/#episode_1")
         fetch.assert_called_once_with("https://nimegami.id/demo/")
 
-    def test_download_resolves_only_the_requested_episode_and_quality(self):
+    def test_download_resolves_only_requested_episode_to_direct_media_url(self):
         soup = BeautifulSoup(
             '<div class="player-stage" id="episode_1"></div>'
             '<script>self.x="playUrl":"/demo/streaming/1/720p/one/";'
             'self.y="playUrl":"/demo/streaming/2/480p/two/";</script>',
             "html.parser",
         )
-        with patch.object(nimegami, "_soup", return_value=soup):
+        player = BeautifulSoup(
+            '<main id="player" data-src="https://stream-stor.berkasdrive.com/v/token"></main>',
+            "html.parser",
+        )
+        with patch.object(nimegami, "_soup", side_effect=[soup, player]):
             result = nimegami.getDownload("https://nimegami.id/demo/#episode_2")
 
         self.assertEqual(result, {
-            "480p": "https://nimegami.id/demo/streaming/2/480p/two/",
-            "embed": "https://nimegami.id/demo/streaming/2/480p/two/",
+            "480p": "https://stream-stor.berkasdrive.com/v/token",
         })
+
+    def test_download_rejects_media_urls_outside_berkasdrive(self):
+        detail = BeautifulSoup(
+            '<script>self.x="playUrl":"/demo/streaming/1/720p/one/";</script>',
+            "html.parser",
+        )
+        player = BeautifulSoup(
+            '<main id="player" data-src="https://attacker.example/video.mp4"></main>',
+            "html.parser",
+        )
+        with patch.object(nimegami, "_soup", side_effect=[detail, player]):
+            result = nimegami.getDownload("https://nimegami.id/demo/#episode_1")
+
+        self.assertEqual(result, {})
 
     def test_unknown_episode_does_not_fall_back_to_another_episode_player(self):
         soup = BeautifulSoup(

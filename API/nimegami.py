@@ -200,12 +200,28 @@ def getDownload(url):
         if quality and stream_url:
             streams[quality.lower()] = urljoin(host, stream_url)
 
-    # Anime detail pages expose a streaming page link for each episode and resolution.
+    # Anime detail pages expose a player page for each episode and resolution.
+    player_routes = {}
     for number, quality, stream_url in _stream_routes(soup):
         if number == episode_num:
-            streams[quality] = stream_url
+            player_routes[quality] = stream_url
 
-    # On Nimegami the player URL itself serves the selected quality.
-    if streams:
-        streams["embed"] = streams.get("720p") or next(iter(streams.values()))
+    # The player page carries the actual MP4 URL in #player[data-src]. This is
+    # needed because Nimegami's player page disallows framing on other origins.
+    for quality, player_url in player_routes.items():
+        try:
+            player_soup = _soup(player_url)
+        except requests.RequestException:
+            continue
+        player = player_soup.select_one("#player[data-src]")
+        media_url = player.get("data-src", "") if player else ""
+        try:
+            parsed_media = urlsplit(media_url)
+            if (parsed_media.scheme == "https" and parsed_media.hostname
+                    and (parsed_media.hostname == "berkasdrive.com"
+                         or parsed_media.hostname.endswith(".berkasdrive.com"))):
+                streams[quality] = media_url
+        except ValueError:
+            continue
+
     return streams
