@@ -18,6 +18,7 @@ if BASE_DIR not in sys.path:
 
 import API.otakudesu as otakudesu_api
 import API.samehadaku as samehadaku_api
+import API.nimegami as nimegami_api
 from API.extractor.krakenfiles import getStream
 from utils.database import (
     loadSettings, saveSettings, loadData, saveData,
@@ -47,6 +48,12 @@ PROVIDERS = {
         "name": "Otakudesu",
         "module": otakudesu_api,
         "host": "https://otakudesu.blog/"
+    },
+    "nimegami": {
+        "id": "nimegami",
+        "name": "Nimegami",
+        "module": nimegami_api,
+        "host": "https://nimegami.id/"
     }
 }
 
@@ -57,12 +64,20 @@ def get_module(provider_id: Optional[str] = None):
 def get_module_by_url(url: str):
     if not url:
         return get_module()
-    u = url.lower()
-    if "samehadaku" in u:
+    try:
+        hostname = urllib.parse.urlsplit(url).hostname
+    except ValueError:
+        return None
+    if not hostname:
+        return None
+    hostname = hostname.lower().rstrip(".")
+    if hostname == "v2.samehadaku.how":
         return samehadaku_api
-    elif "otakudesu" in u:
+    elif hostname == "otakudesu.blog":
         return otakudesu_api
-    return get_module()
+    elif hostname == "nimegami.id":
+        return nimegami_api
+    return None
 
 
 @app.get("/api/providers")
@@ -98,12 +113,13 @@ def get_schedule(provider: str = "samehadaku"):
                 day = item.get("hari")
                 if day in schedule_data and item not in schedule_data[day]:
                     schedule_data[day].append(item)
-        else:
+        elif provider == "otakudesu":
             ongoing = otakudesu_api.getOngoing(1)
             for item in ongoing:
                 day = item.get("hari")
                 if day in schedule_data:
                     schedule_data[day].append(item)
+        # Nimegami does not expose a release-day schedule.
 
         return {"success": True, "provider": provider, "data": schedule_data}
     except Exception as e:
@@ -123,7 +139,9 @@ def get_genres(provider: str = "samehadaku"):
 
 @app.get("/api/genre-anime")
 def get_genre_anime(path: str, provider: str = "samehadaku"):
-    mod = get_module_by_url(path) if path.startswith("http") else get_module(provider)
+    mod = get_module_by_url(path) if path.startswith(("http://", "https://")) else get_module(provider)
+    if mod is None:
+        raise HTTPException(status_code=400, detail="URL provider tidak dikenal")
     try:
         items = mod.getGenreAnime(path)
         return {"success": True, "path": path, "data": items}
@@ -148,6 +166,8 @@ def episodes(url: str):
     if not url:
         raise HTTPException(status_code=400, detail="Missing url parameter")
     mod = get_module_by_url(url)
+    if mod is None:
+        raise HTTPException(status_code=400, detail="URL provider tidak dikenal")
     try:
         data = mod.getEpisodes(url)
         return {"success": True, "url": url, "data": data}
@@ -160,6 +180,8 @@ def download(url: str):
     if not url:
         raise HTTPException(status_code=400, detail="Missing url parameter")
     mod = get_module_by_url(url)
+    if mod is None:
+        raise HTTPException(status_code=400, detail="URL provider tidak dikenal")
     try:
         data = mod.getDownload(url)
         return {"success": True, "url": url, "data": data}
@@ -236,6 +258,8 @@ def stream_candidates(ep_url: str = Query(...), quality: str = Query("720p")):
         raise HTTPException(status_code=400, detail="Missing ep_url parameter")
 
     mod = get_module_by_url(ep_url)
+    if mod is None:
+        raise HTTPException(status_code=400, detail="URL provider tidak dikenal")
     try:
         dl = mod.getDownload(ep_url)
     except Exception as e:
@@ -249,6 +273,29 @@ def stream_candidates(ep_url: str = Query(...), quality: str = Query("720p")):
     q_target = quality.lower().replace("mp4", "").replace("mkv", "").strip()
     if not any(k in q_target for k in ["1080", "720", "480", "360"]):
         q_target = "720p"
+
+    # Nimegami returns hosted player pages rather than direct video files.
+    # Send those pages to the existing iframe player and skip file-host extraction.
+    if mod is nimegami_api:
+        available = [q for q in std_qualities if dl.get(q)]
+        order = [q_target] + [q for q in ["720p", "480p", "1080p", "360p"] if q != q_target]
+        candidates = [
+            {
+                "id": f"nimegami_{q}",
+                "name": f"Nimegami Player ({q.upper()})",
+                "type": "iframe",
+                "url": dl[q],
+                "quality": q,
+            }
+            for q in order if dl.get(q)
+        ]
+        return {
+            "success": bool(candidates),
+            "requested_quality": q_target,
+            "candidates": candidates,
+            "available_qualities": available or ["720p"],
+            "downloads": {},
+        }
 
     # Find matching key in dl
     target_dl = None

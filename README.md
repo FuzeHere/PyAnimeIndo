@@ -7,6 +7,7 @@ Nonton anime subtitle Indonesia tanpa iklan. Dengan GUI berbasis **PyQt5** dan *
 > 
 > **Pembaruan di v1.2.5**:
 > - Integrasi provider baru **Samehadaku** (`https://v2.samehadaku.how/`) dengan parser REST API & web scraping.
+> - Integrasi provider **Nimegami** di web, termasuk pencarian API, katalog, genre, daftar episode, dan player berdasarkan kualitas.
 > - Multi-provider selector (pilih sumber Otakudesu / Samehadaku langsung dari antarmuka utama atau Pengaturan).
 > - Dukungan resolusi link unduhan & streaming Pixeldrain otomatis untuk Samehadaku.
 > - Kompatibilitas silang untuk Bookmark/Riwayat antar-provider.
@@ -92,7 +93,7 @@ File `.exe` hasil kompilasi akan otomatis dibuat di folder **`dist/pyanimeindo.e
 ## Kredit & Pengembang
 - **Programmer/Designer Original**: [Ayra Hikari](https://github.com/AyraHikari)
 - **Ikon**: [Heroicons](https://heroicons.com)
-- **Host Provider**: Otakudesu & Samehadaku (`v2.samehadaku.how`)
+- **Host Provider**: Otakudesu, Samehadaku (`v2.samehadaku.how`), dan Nimegami (`nimegami.id`, versi web)
 - **Upscaler/Render**: [Anime4K](https://github.com/bloc97/Anime4K)
 - **Video Player**: [MPV Player](https://mpv.io/)
 

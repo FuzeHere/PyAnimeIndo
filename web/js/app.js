@@ -96,7 +96,8 @@ function setupProviderToggle() {
         state.provider = p;
         localStorage.setItem('pyanimeindo_provider', p);
         dom.providerBtns.forEach(b => b.classList.toggle('active', b.dataset.provider === p));
-        showToast(`Provider berganti ke: ${p === 'samehadaku' ? 'Samehadaku' : 'Otakudesu'}`);
+        const providerNames = { samehadaku: 'Samehadaku', otakudesu: 'Otakudesu', nimegami: 'Nimegami' };
+        showToast(`Provider berganti ke: ${providerNames[p] || p}`);
         loadInitialData();
       }
     });
