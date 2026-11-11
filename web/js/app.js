@@ -418,6 +418,136 @@ function hidePlayerAlert() {
   }
 }
 
+function seekVideo(seconds) {
+  const video = document.getElementById('activeVideoPlayer');
+  if (!video) {
+    showToast('Fitur lompat 10 detik hanya didukung pada pemutar video MP4');
+    return;
+  }
+  const current = video.currentTime || 0;
+  const target = Math.max(0, Math.min(video.duration || Infinity, current + seconds));
+  video.currentTime = target;
+  showSeekFeedback(seconds > 0 ? `+${seconds}s` : `${seconds}s`, seconds > 0 ? 'right' : 'left');
+}
+
+function showSeekFeedback(text, side) {
+  const wrapper = document.getElementById('playerWrapper');
+  if (!wrapper) return;
+  const old = wrapper.querySelector('.seek-feedback-badge');
+  if (old) old.remove();
+
+  const badge = document.createElement('div');
+  badge.className = 'seek-feedback-badge';
+  badge.style.left = side === 'right' ? '70%' : '30%';
+  badge.innerHTML = side === 'right'
+    ? `<span>${text}</span> <i class="fa-solid fa-rotate-right"></i>`
+    : `<i class="fa-solid fa-rotate-left"></i> <span>${text}</span>`;
+  wrapper.appendChild(badge);
+  setTimeout(() => badge.remove(), 700);
+}
+
+function getAdjacentEpisodes(episodes, currentEpUrl, currentEpTitle) {
+  if (!episodes || !episodes.length) return { prev: null, next: null };
+
+  const extractNum = (str) => {
+    if (!str) return null;
+    const m = str.match(/episode[_\s-]*(\d+(?:\.\d+)?)/i) || str.match(/\bep[_\s.-]*(\d+(?:\.\d+)?)/i) || str.match(/(\d+(?:\.\d+)?)/);
+    return m ? parseFloat(m[1]) : null;
+  };
+
+  const currentNum = extractNum(currentEpTitle) ?? extractNum(currentEpUrl);
+
+  let currentIdx = episodes.findIndex(e => e.url === currentEpUrl);
+  if (currentIdx === -1 && currentNum !== null) {
+    currentIdx = episodes.findIndex(e => extractNum(e.title) === currentNum || extractNum(e.url) === currentNum);
+  }
+
+  if (currentNum !== null) {
+    const nextByNum = episodes.find(e => (extractNum(e.title) === currentNum + 1 || extractNum(e.url) === currentNum + 1));
+    const prevByNum = episodes.find(e => (extractNum(e.title) === currentNum - 1 || extractNum(e.url) === currentNum - 1));
+    if (nextByNum || prevByNum) {
+      return { prev: prevByNum || null, next: nextByNum || null };
+    }
+  }
+
+  if (currentIdx !== -1) {
+    let isAscending = true;
+    if (episodes.length >= 2) {
+      const firstNum = extractNum(episodes[0].title);
+      const lastNum = extractNum(episodes[episodes.length - 1].title);
+      if (firstNum !== null && lastNum !== null) {
+        isAscending = firstNum < lastNum;
+      }
+    }
+    if (isAscending) {
+      return {
+        prev: currentIdx > 0 ? episodes[currentIdx - 1] : null,
+        next: currentIdx < episodes.length - 1 ? episodes[currentIdx + 1] : null
+      };
+    } else {
+      return {
+        prev: currentIdx < episodes.length - 1 ? episodes[currentIdx + 1] : null,
+        next: currentIdx > 0 ? episodes[currentIdx - 1] : null
+      };
+    }
+  }
+
+  return { prev: null, next: null };
+}
+
+function updateEpisodeNav(epUrl, animeTitle, epTitle) {
+  const btnPrev = document.getElementById('btnPrevEp');
+  const btnNext = document.getElementById('btnNextEp');
+  if (!btnPrev || !btnNext) return;
+
+  const episodes = (state.activeAnime && Array.isArray(state.activeAnime.episodes) && state.activeAnime.episodes.length)
+    ? state.activeAnime.episodes
+    : (state.currentEpisodeList || []);
+
+  const adj = getAdjacentEpisodes(episodes, epUrl, epTitle);
+  activePlayback.adjacent = adj;
+
+  if (adj.prev) {
+    btnPrev.disabled = false;
+    btnPrev.title = `Episode Sebelumnya: ${adj.prev.title} (Shortcut: [ atau P)`;
+    btnPrev.onclick = () => {
+      playEpisode(adj.prev.url, animeTitle, adj.prev.title);
+    };
+  } else {
+    btnPrev.disabled = true;
+    btnPrev.title = 'Tidak ada episode sebelumnya';
+    btnPrev.onclick = null;
+  }
+
+  if (adj.next) {
+    btnNext.disabled = false;
+    btnNext.title = `Episode Selanjutnya: ${adj.next.title} (Shortcut: ] atau N)`;
+    btnNext.onclick = () => {
+      playEpisode(adj.next.url, animeTitle, adj.next.title);
+    };
+  } else {
+    btnNext.disabled = true;
+    btnNext.title = 'Tidak ada episode selanjutnya';
+    btnNext.onclick = null;
+  }
+
+  if (!episodes.length && epUrl) {
+    const animeUrl = (state.activeAnime && state.activeAnime.url) || epUrl.split('#')[0];
+    if (animeUrl) {
+      fetch(`${API_BASE}/api/episodes?url=${encodeURIComponent(animeUrl)}`)
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data && res.data.episodes) {
+            state.currentEpisodeList = res.data.episodes;
+            if (!state.activeAnime) state.activeAnime = res.data;
+            updateEpisodeNav(epUrl, animeTitle, epTitle);
+          }
+        })
+        .catch(() => {});
+    }
+  }
+}
+
 async function playEpisode(epUrl, animeTitle, epTitle, forcedQuality = null) {
   clearPlaybackTimers();
   dom.playerModal.classList.add('active');
@@ -479,6 +609,13 @@ async function playEpisode(epUrl, animeTitle, epTitle, forcedQuality = null) {
       tryNextCandidate('Beralih ke server berikutnya sesuai permintaan pengguna...');
     };
   }
+
+  // Setup Seek Buttons & Episode Navigation
+  const btnSeekBack = document.getElementById('btnSeekBack');
+  const btnSeekForward = document.getElementById('btnSeekForward');
+  if (btnSeekBack) btnSeekBack.onclick = () => seekVideo(-10);
+  if (btnSeekForward) btnSeekForward.onclick = () => seekVideo(10);
+  updateEpisodeNav(epUrl, animeTitle, epTitle);
 
   // Save history
   recordHistory(epUrl, animeTitle, epTitle);
@@ -613,9 +750,33 @@ function mountCurrentCandidate() {
       <video id="activeVideoPlayer" class="player-element" src="${current.url}" controls playsinline preload="auto" controlsList="nodownload">
         Browser Anda tidak mendukung pemutar video HTML5.
       </video>
+      <button class="video-seek-overlay left" id="overlaySeekBack" title="Mundur 10 Detik">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span>-10s</span>
+      </button>
+      <button class="video-seek-overlay right" id="overlaySeekForward" title="Maju 10 Detik">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>+10s</span>
+      </button>
     `;
 
     const video = document.getElementById('activeVideoPlayer');
+    const overlayBack = document.getElementById('overlaySeekBack');
+    const overlayFwd = document.getElementById('overlaySeekForward');
+
+    if (overlayBack) overlayBack.onclick = (e) => { e.stopPropagation(); seekVideo(-10); };
+    if (overlayFwd) overlayFwd.onclick = (e) => { e.stopPropagation(); seekVideo(10); };
+
+    video.addEventListener('dblclick', (e) => {
+      const rect = video.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      if (clickX < rect.width / 2) {
+        seekVideo(-10);
+      } else {
+        seekVideo(10);
+      }
+    });
+
     activePlayback.isResolvedPlaying = false;
 
     // Success listeners
@@ -1092,11 +1253,44 @@ function setupModals() {
     });
   });
 
-  // ESC key listener
+  // Global & Player keyboard shortcuts listener
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeModal(dom.detailModal);
       closeModal(dom.playerModal);
+      return;
+    }
+
+    // Player Modal shortcuts
+    if (dom.playerModal && dom.playerModal.classList.contains('active')) {
+      const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea') return;
+
+      if (e.key === 'ArrowLeft' || e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        seekVideo(-10);
+      } else if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        seekVideo(10);
+      } else if (e.key === '[' || e.key === 'p' || e.key === 'P') {
+        const btnPrev = document.getElementById('btnPrevEp');
+        if (btnPrev && !btnPrev.disabled && btnPrev.onclick) {
+          e.preventDefault();
+          btnPrev.click();
+        }
+      } else if (e.key === ']' || e.key === 'n' || e.key === 'N') {
+        const btnNext = document.getElementById('btnNextEp');
+        if (btnNext && !btnNext.disabled && btnNext.onclick) {
+          e.preventDefault();
+          btnNext.click();
+        }
+      } else if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+        const video = document.getElementById('activeVideoPlayer');
+        if (video) {
+          e.preventDefault();
+          if (video.paused) video.play(); else video.pause();
+        }
+      }
     }
   });
 }
